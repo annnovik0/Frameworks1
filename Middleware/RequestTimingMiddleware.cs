@@ -19,22 +19,20 @@ namespace Practice1.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            // Запускаем секундомер ДО выполнения следующего middleware
             var stopwatch = Stopwatch.StartNew();
 
-            // Передаем управление дальше по конвейеру
             await _next(context);
 
-            // Останавливаем секундомер ПОСЛЕ того, как все middleware сработали
             stopwatch.Stop();
             var elapsedMs = stopwatch.ElapsedMilliseconds;
 
-            // Добавляем время выполнения в заголовки ответа
-            // Клиент сможет увидеть, сколько времени занял запрос
-            context.Response.Headers.TryAdd("X-Response-Time-Ms", elapsedMs.ToString());
+            if (!context.Response.HasStarted)
+            {
+                context.Response.Headers.TryAdd("X-Response-Time-Ms", elapsedMs.ToString());
+            }
 
-            // Также пишем в лог (но это уже сделает следующий middleware)
-            _logger.LogDebug("Запрос {RequestId} выполнен за {ElapsedMs} мс",
+            // ⭐ ЭТА СТРОЧКА ДОЛЖНА БЫТЬ ДЛЯ ЛОГИРОВАНИЯ ВРЕМЕНИ
+            _logger.LogInformation("Запрос {RequestId} выполнен за {ElapsedMs} мс",
                 context.TraceIdentifier, elapsedMs);
         }
     }
